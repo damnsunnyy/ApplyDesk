@@ -16,3 +16,4 @@
 .application-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .form-message.error{color:#b94f3a}
 .text-button.destructive{color:#a45c4a}
+.job-result .job-source{font-size:9px;color:#737a6f;margin-top:5px}.job-result .job-source a{color:#627741;text-decoration:underline;text-underline-offset:2px}

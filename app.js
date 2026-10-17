@@ -353,7 +353,7 @@ async function findJobs(silent = false) {
   if (error) { setMessage('search-message', error.message || 'Search service is not configured. See the setup guide.', true); return; }
   if (data?.error) { setMessage('search-message', data.error, true); return; }
   searchResults = (data?.jobs || []).map(job => ({ ...job, ...matchJob(job) })).sort((a, b) => b.score - a.score);
-  renderSearchResults(); setMessage('search-message', searchResults.length ? `${searchResults.length} listings found. Compare the profile overlap and open the original listing before applying.` : 'No current listings found for that search. Try a broader role or location.');
+  renderSearchResults(); setMessage('search-message', searchResults.length ? `${searchResults.length} remote listings from Himalayas found. Country eligibility is applied where available; city searches use the associated country. Open each original listing to apply.` : 'No current remote listings found for that search. Try another role or a broader location.');
 }
 
 function renderSearchResults() {
@@ -362,12 +362,14 @@ function renderSearchResults() {
     const card = document.createElement('article'); card.className = 'job-result';
     const title = document.createElement('h3'); title.textContent = job.title;
     const details = document.createElement('p'); details.textContent = [job.company, job.location].filter(Boolean).join(' · ');
+    const source = document.createElement('p'); source.className = 'job-source'; source.append(document.createTextNode('Source: '));
+    const sourceLink = document.createElement('a'); sourceLink.href = safeUrl(job.url) || 'https://himalayas.app/'; sourceLink.target = '_blank'; sourceLink.rel = 'noreferrer'; sourceLink.textContent = 'Himalayas'; source.append(sourceLink);
     const desc = document.createElement('p'); desc.className = 'job-description'; desc.textContent = job.description || 'The provider did not include a description.';
     const foot = document.createElement('div'); foot.className = 'job-result-foot'; const chip = document.createElement('span'); chip.className = 'score-chip'; chip.textContent = `${job.score}% skill overlap`;
     const actions = document.createElement('div'); actions.style.display = 'flex'; actions.style.gap = '10px';
     const link = document.createElement('a'); link.href = safeUrl(job.url) || '#'; link.target = '_blank'; link.rel = 'noreferrer'; link.textContent = 'Open listing ↗';
     const save = document.createElement('button'); save.className = 'text-button'; save.textContent = 'Save'; save.addEventListener('click', () => saveFeedJob(job, save));
-    actions.append(link, save); foot.append(chip, actions); card.append(title, details, desc, foot); root.append(card);
+    actions.append(link, save); foot.append(chip, actions); card.append(title, details, source, desc, foot); root.append(card);
   }
 }
 

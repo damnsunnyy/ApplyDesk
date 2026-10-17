@@ -23,9 +23,6 @@ Deno.serve(async (request) => {
   const { data: authData, error: authError } = await client.auth.getUser();
   if (authError || !authData.user) return json({ error: "Your session expired. Sign in again." }, 401);
 
-  const appId = Deno.env.get("ADZUNA_APP_ID");
-  const appKey = Deno.env.get("ADZUNA_APP_KEY");
-  if (!appId || !appKey) return json({ error: "Live search is not connected yet. Add the Adzuna API secrets in the setup guide." }, 503);
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!serviceKey) return json({ error: "Server-side rate limiting is not configured." }, 503);
 
@@ -44,30 +41,40 @@ Deno.serve(async (request) => {
   const { error: logError } = await admin.from("job_search_log").insert({ user_id: authData.user.id });
   if (logError) return json({ error: "Could not record this search." }, 503);
 
-  const query = new URLSearchParams({
-    app_id: appId,
-    app_key: appKey,
-    results_per_page: "20",
-    what: role,
-    where: location,
-    "content-type": "application/json",
-  });
+  // Himalayas supports country filters for remote roles. Map common city names
+  // to country eligibility; unknown locations still search worldwide remote jobs.
+  const normalizedLocation = location.toLowerCase();
+  const countryMap: Record<string, string> = {
+    india: "IN", in: "IN", pune: "IN", mumbai: "IN", bengaluru: "IN", bangalore: "IN", delhi: "IN", hyderabad: "IN", chennai: "IN",
+    usa: "US", "united states": "US", us: "US", uk: "GB", "united kingdom": "GB", canada: "CA", australia: "AU", germany: "DE", france: "FR", singapore: "SG",
+  };
+  const country = Object.entries(countryMap).find(([name]) => normalizedLocation === name || normalizedLocation.endsWith(`, ${name}`))?.[1];
+  const query = new URLSearchParams({ q: role, sort: "recent", page: "1" });
+  if (country) query.set("country", country);
   try {
-    const response = await fetch(`https://api.adzuna.com/v1/api/jobs/in/search/1?${query}`);
+    const response = await fetch(`https://himalayas.app/jobs/api/search?${query}`);
     if (!response.ok) return json({ error: `Job provider returned ${response.status}. Try again later.` }, 502);
     const result = await response.json();
-    const jobs = (Array.isArray(result.results) ? result.results : []).map((job: Record<string, unknown>) => ({
-      provider_job_id: String(job.id ?? ""),
+    const jobs = (Array.isArray(result.jobs) ? result.jobs : []).map((job: Record<string, unknown>) => {
+      const restrictions = Array.isArray(job.locationRestrictions) ? job.locationRestrictions as string[] : [];
+      const locationLabel = restrictions.length ? `Remote · ${restrictions.join(", ")}` : "Remote · worldwide";
+      const description = String(job.description ?? job.excerpt ?? "").replace(/<[^>]*>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/\s+/g, " ").trim();
+      const url = String(job.applicationLink ?? job.guid ?? "");
+      return {
+      provider_job_id: String(job.guid ?? url),
       title: String(job.title ?? "").slice(0, 180),
-      company: String((job.company as Record<string, unknown> | undefined)?.display_name ?? "Company not listed").slice(0, 140),
-      location: String((job.location as Record<string, unknown> | undefined)?.display_name ?? location).slice(0, 120),
-      url: String(job.redirect_url ?? ""),
-      description: String(job.description ?? "").slice(0, 12000),
-      created_at: String(job.created ?? ""),
-      salary_min: typeof job.salary_min === "number" ? job.salary_min : null,
-      salary_max: typeof job.salary_max === "number" ? job.salary_max : null,
-    }));
-    return json({ jobs });
+      company: String(job.companyName ?? "Company not listed").slice(0, 140),
+      location: locationLabel.slice(0, 120),
+      url: url.startsWith("https://") ? url : "",
+      description: description.slice(0, 12000),
+      created_at: typeof job.pubDate === "number" ? new Date(job.pubDate * 1000).toISOString() : "",
+      salary_min: typeof job.minSalary === "number" ? job.minSalary : null,
+      salary_max: typeof job.maxSalary === "number" ? job.maxSalary : null,
+      source: "Himalayas",
+      source_url: "https://himalayas.app/",
+    };
+    });
+    return json({ jobs, source: "Himalayas", source_url: "https://himalayas.app/", remote_only: true });
   } catch {
     return json({ error: "Could not reach the job provider. Check the server function and try again." }, 502);
   }
