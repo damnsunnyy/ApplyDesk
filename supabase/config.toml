@@ -1,0 +1,4 @@
+project_id = "apply-desk"
+
+[functions.find-jobs]
+verify_jwt = true

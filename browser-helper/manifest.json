@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Apply Desk — Form Helper",
+  "version": "1.0.0",
+  "description": "Capture jobs, fill known details, and optionally submit complete forms on approved sites.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "action": {"default_popup": "popup.html", "default_title": "Apply Desk"},
+  "options_page": "options.html"
+}

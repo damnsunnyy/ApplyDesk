@@ -1,0 +1,14 @@
+{
+  "name": "apply-desk",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "esbuild app.js --bundle --format=esm --minify --outfile=app.bundle.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.118.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
+  }
+}

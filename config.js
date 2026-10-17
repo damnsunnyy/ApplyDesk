@@ -1,0 +1,6 @@
+// Public browser configuration only. These values are identifiers, not secrets.
+// Never put a Supabase service_role key, database password, Adzuna app key, or
+// Google OAuth client secret here.
+export const SUPABASE_URL = '';
+export const SUPABASE_PUBLISHABLE_KEY = '';
+export const GOOGLE_OAUTH_CLIENT_ID = '';
