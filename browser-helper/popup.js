@@ -1,5 +1,5 @@
 const TRACKER='https://damnsunnyy.github.io/ApplyDesk/';
-const DEFAULT={name:'',email:'',phone:'',location:'',linkedin:'',website:''};
+const DEFAULT={name:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:'',skills:'',experience:'',education:''};
 async function getProfile(){const d=await chrome.storage.local.get('profile');return {...DEFAULT,...d.profile};}
 async function currentTab(){const [tab]=await chrome.tabs.query({active:true,currentWindow:true});if(!tab?.id)throw Error('No active tab found.');return tab;}
 const say=(s)=>document.querySelector('#message').textContent=s;
@@ -33,6 +33,10 @@ document.querySelector('#fill').addEventListener('click',async()=>{try{
    else if(!companyOrOrg&&/linkedin|linked in/.test(key))value=p.linkedin||'';
    else if(!companyOrOrg&&/portfolio|personal website|personal url/.test(key))value=p.website||'';
    else if(!companyOrOrg&&/city|location|address/.test(key))value=p.location||'';
+   else if(!companyOrOrg&&/professional summary|resume summary/.test(key))value=p.summary||'';
+   else if(!companyOrOrg&&/technical skills|skills/.test(key))value=p.skills||'';
+   else if(!companyOrOrg&&/professional experience|work experience|employment history/.test(key))value=p.experience||'';
+   else if(!companyOrOrg&&/education|degree/.test(key))value=p.education||'';
    else if(!companyOrOrg&&(el.type==='email'||/e mail|email address/.test(key)))value=p.email||'';
    else if(!companyOrOrg&&(el.type==='tel'||/phone|mobile|telephone|contact number/.test(key)))value=p.phone||'';
    if(value&&!el.value){
@@ -52,7 +56,7 @@ document.querySelector('#fill').addEventListener('click',async()=>{try{
   const hasRisk=risky.test(norm(form.innerText+' '+[...form.querySelectorAll('label')].map(x=>x.innerText).join(' ')));
   const applicationSignal=appForms.length===1&&appForms[0]===form;
   const uniqueApplicationForm=appForms.length===1&&appForms[0]===form;
-  if(automation.autoSubmit&&approved&&uniqueApplicationForm&&filled>0&&recognized.length>0&&!missing.length&&!hasRisk&&applicationSignal&&submit){submit.click();return {filled,submitted:true,missing:[],approved};}
+  if(automation.autoSubmit&&approved&&uniqueApplicationForm&&recognized.length>0&&!missing.length&&!hasRisk&&applicationSignal&&submit){submit.click();return {filled,submitted:true,missing:[],approved};}
   return {filled,submitted:false,missing:[...new Set(missing)],approved,reason:missing.length?'Some required answers or uploads need you.':automation.autoSubmit&&!approved?'This hostname is not approved for auto-submit.':automation.autoSubmit&&hasRisk?'This form includes a sensitive declaration; review and submit it yourself.':automation.autoSubmit&&!applicationSignal?'This page does not look clearly like a job application.':'Review the filled fields, then submit on the site.'};
  },args:[p,automation]});
  if(result.submitted)say(`Submitted on approved ${tab.url?new URL(tab.url).hostname:'site'} with ${result.filled} known fields. Check for the site's confirmation.`);

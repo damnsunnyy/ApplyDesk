@@ -8,13 +8,13 @@ The live Apply Desk is at [damnsunnyy.github.io/ApplyDesk](https://damnsunnyy.gi
 
 1. Download this repository or its `browser-helper` folder to your computer.
 2. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this folder.
-3. Open the extension’s **Details → Extension options** and check your contact details.
+3. Open the extension’s **Details → Extension options**. Upload a text-based PDF resume to fill blank contact, summary, skills, experience, and education fields. Parsing happens locally in this extension page; review the extracted details and click Save to keep them in this browser.
 4. On a job page, click the extension and choose **Capture this job**. Sign in if asked, review the captured role/company/description, then save it to your account.
 5. In Gmail, open a job-related message and choose **Log this email** to add a reply signal to the tracker. This is an on-demand capture; inbox-wide sync is not enabled.
-6. On an application form, choose **Fill application**. It fills recognized personal details from your local profile. Review the values before submitting.
+6. On an application form, choose **Fill application**. It fills recognized details from your local profile. With auto-submit disabled, review the fields and submit yourself.
 7. To enable opt-in submission, open **Edit profile**, enable auto-submit, and list exact approved hostnames (for example, `jobs.example.com`). For each job, open the listing's application form and click **Fill application** in the extension. On an approved host, it submits only when it identifies one application form, fills known fields, sees no unanswered required fields or sensitive declarations, and finds a clear submit button.
 
-The helper blocks auto-submit when required answers or required file uploads are missing, or it detects questions about work authorization, sponsorship, salary, demographics, legal declarations, assessments, or consent. It cannot attach a resume or reliably handle every dynamic application flow. It does not find or open job listings in the background, and it does not submit a batch of applications. Check the site for a receipt after it submits; the helper cannot guarantee that a third-party site accepted the application. Review the host allowlist and your saved details before enabling this feature.
+The helper blocks auto-submit when required answers or required file uploads are missing, or it detects questions about work authorization, sponsorship, salary, demographics, legal declarations, assessments, or consent. It does not attach the PDF for you; upload it on each application form when required. It does not find or open job listings in the background, and it does not submit a batch of applications. Check the site for a receipt after it submits; the helper cannot guarantee that a third-party site accepted the application. Review the host allowlist and your saved details before enabling this feature.
 
 ## Privacy and limitations
 

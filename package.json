@@ -3,10 +3,11 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "esbuild app.js --bundle --format=esm --minify --outfile=app.bundle.js"
+    "build": "esbuild app.js --bundle --format=esm --minify --outfile=app.bundle.js && esbuild browser-helper/options.js --bundle --format=esm --platform=browser --minify --outfile=browser-helper/options.bundle.js && cp node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs browser-helper/pdf.worker.min.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.118.0"
+    "@supabase/supabase-js": "2.118.0",
+    "pdfjs-dist": "^6.4.299"
   },
   "devDependencies": {
     "esbuild": "0.28.2"
