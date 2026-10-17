@@ -6,13 +6,13 @@ A personal job-search workspace with account-based profiles, a role matching fee
 
 ## Current setup state
 
-The site is deployed as a standalone GitHub Pages app. Account sign-in, private cross-device records, live job search, and Gmail sync require a Supabase project and provider credentials. Until those are connected, the page opens the setup guide rather than pretending sign-up is active.
+The site is deployed as a standalone GitHub Pages app. The frontend now points to the connected Supabase project. Sign-up and private cross-device records become fully usable once the database migration is applied and the project’s Auth redirect URLs include this Pages site. Live job search and Gmail tracking need their separate provider credentials.
 
 ## Connect the backend
 
-1. Create a Supabase project.
-2. Run `supabase/migrations/202610170001_apply_desk.sql` in its SQL editor.
-3. Set `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` in `config.js` and push the change. Use only the publishable key in the browser.
+1. The frontend URL and publishable key are configured in `config.js`.
+2. Run `supabase/migrations/202610170001_apply_desk.sql` in the linked project SQL editor if the GitHub integration has not already applied it.
+3. In Supabase Auth → URL Configuration, allow `https://damnsunnyy.github.io/ApplyDesk/` as the Site URL and redirect URL. Use only the publishable key in browser code.
 4. For job listings, add Adzuna app credentials as Supabase Edge Function secrets and deploy `find-jobs`.
 5. For Gmail tracking, configure a Google OAuth web client and add its client ID to `config.js`. Gmail sync currently runs while a signed-in user has the app open.
 
