@@ -1,8 +1,8 @@
 # Apply Desk
 
-A personal job-search workspace with account-based profiles, a role matching feed, application tracking, resume tailoring, email status signals, and an optional Chrome form helper.
+**Live demo:** [https://damnsunnyy.github.io/ApplyDesk/](https://damnsunnyy.github.io/ApplyDesk/)
 
-**Live webpage:** https://damnsunnyy.github.io/ApplyDesk/
+A personal job-search workspace with account-based profiles, a role matching feed, application tracking, resume tailoring, email status signals, and an optional Chrome form helper.
 
 ## Current setup state
 
