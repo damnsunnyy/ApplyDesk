@@ -248,7 +248,17 @@ ${profile.portfolio || profile.website || profile.linkedin || ''}`.trim();
     if (/education|degree|university|college|school/.test(q)) return profile.education || '';
     if (/skill|technology|tech stack|tools/.test(q)) return profile.skills || '';
 
-    // 8. Common startup questions bank
+    // 8. Wellfound next role / ideal job (e.g. "Describe what you are looking for in your next job")
+    if (/what (are you|you're) looking for|next (job|role)|ideal (role|team|environment)|looking for in your next/i.test(q)) {
+      const skillsSnippet = (profile.skills || 'React, Node.js, Python').split(',').slice(0, 3).join(', ').trim();
+      return `I'm looking for a high-ownership engineering role at an agile startup where I can build and scale user-facing web apps. Excited to work with modern stacks (${skillsSnippet}), collaborate closely with product, and solve problems that deliver direct customer impact.`.slice(0, 290);
+    }
+    if (/primary role|target role|desired title|current title|what is your title/i.test(q)) {
+      return (Array.isArray(profile.targetRoles) && profile.targetRoles[0]) || 'Full Stack Software Engineer';
+    }
+    if (/bio\b|elevator pitch|about yourself|describe yourself|tell us about|summary/i.test(q)) {
+      return profile.summary || `Full stack software engineer experienced with ${profile.skills || 'modern web technologies'}. Passionate about building robust, high-performance applications with great user experiences.`;
+    }
     if (/why (this|are you|do you|work with|join)|interest in (this|our|the)|pitch/i.test(q)) {
       return `I am genuinely excited about ${job.company}'s mission and the chance to contribute to the ${job.title} role. My experience with ${profile.skills || 'modern development'} directly matches what your team is building.`;
     }
@@ -257,14 +267,6 @@ ${profile.portfolio || profile.website || profile.linkedin || ''}`.trim();
     }
     if (/challenging (bug|problem|technical)|difficult issue/i.test(q)) {
       return `A key challenge I resolved involved diagnosing an intermittent state synchronization bottleneck in production, implementing rigorous regression testing, and optimizing data flow.`;
-    }
-    if (/what are you looking for|ideal (role|team|environment)/i.test(q)) {
-      return `I thrive in an agile, collaborative environment with high engineering standards where I can build impactful products and continuously solve challenging problems.`;
-    }
-
-    // 9. General summary & background
-    if (/summary|about yourself|describe yourself|tell us about|bio/.test(q)) {
-      return profile.summary || [profile.name, profile.skills, ...(profile.highlights || [])].filter(Boolean).join('. ');
     }
 
     return '';
