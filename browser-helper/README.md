@@ -6,19 +6,10 @@ Inspired by [ankitbaghel01/wellfound_autoApply](https://github.com/ankitbaghel01
 
 * **Live On-Screen HUD:** A floating dashboard inside your Wellfound tab displays live application counts, skipped roles, seen roles, pacing delays, and an immediate **Stop** button.
 * **Dry Run Mode:** Test the runner safely without submitting (`🧪 Dry Run`). It finds matching jobs, opens the modal, populates the cover letter and answers, highlights the fields, pauses for visual inspection, and cleanly closes the modal.
-* **Live Run Mode:** Submits matching jobs, respects human-paced intervals (45–75s) to avoid bot flags, updates daily submission state (cap: 50/day), and auto-syncs with your [Apply Desk Tracker](https://damnsunnyy.github.io/ApplyDesk/).
-* **Smart Q&A Answer Bank:** Automatically answers standard Wellfound startup questions without stoppage or premature skips:
-  * Work authorization & eligibility (configurable: default "Yes")
-  * Visa sponsorship requirements (configurable: default "No")
-  * Relocation & remote preferences (configurable: default "Yes")
-  * Desired compensation / salary expectations
-  * Notice period & start date availability
-  * Years of experience
-  * Common startup questions (e.g. "Why this company?", "Proudest achievement", etc.)
-* **Dynamic Cover Letter Generator:** Builds tailored notes addressing the company and position by name, referencing your skills and background. Supports custom templates with `{company}`, `{title}`, `{name}`, `{skills}`, etc.
-* **Optional Google Gemini AI Fallback:** Provide an optional Gemini API key in Options to dynamically generate tailored 1–2 sentence answers for unique, unexpected startup application prompts using your CV facts.
+* **Live Run Mode:** Submits matching jobs with a 60-second minimum interval, enforces a maximum of 50 submissions per day, and can sync records with your [Apply Desk Tracker](https://damnsunnyy.github.io/ApplyDesk/).
+* **Profile based answers:** Fills contact and resume details from your saved profile. Eligibility, sponsorship, relocation, salary, availability, and experience answers stay blank until you configure them. Unknown required questions cause the listing to be skipped.
+* **Cover note:** Uses your own template or a short note based on your saved summary and skills. It does not create answers to personal or experience questions.
 * **Duplicate Protection:** Stores previously applied job URLs across sessions so you never re-apply to the same listing.
-* **Fast-Paced Skipping:** If a listing requires a manual resume PDF upload or is outside eligible regions, it closes the modal and continues to the next job in just 2.5 seconds (no long pauses on skips).
 
 ---
 
@@ -37,7 +28,6 @@ Inspired by [ankitbaghel01/wellfound_autoApply](https://github.com/ankitbaghel01
    - Wellfound target job title keywords (e.g. `software engineer`, `full stack`, `react`).
    - Title blocklist (e.g. `senior`, `principal`, `lead`, `intern`).
    - Work authorization, visa sponsorship, relocation, salary expectations, and notice period.
-   - (Optional) Paste your free Google Gemini API key if you want AI to answer custom startup questions.
 3. Click **Save settings on this device**.
 4. *(Alternative)* If you have an account on [Apply Desk](https://damnsunnyy.github.io/ApplyDesk/), go to **Profile** → **Sync profile to Chrome helper** to sync all details in one click!
 
@@ -78,4 +68,4 @@ If you prefer running automation from your terminal via Node.js and Playwright (
    node auto-apply-runner.js wellfound --live
    ```
 
-Applications are logged locally to `applications.csv`.
+The runner stores its daily count and duplicate history in the persistent Wellfound browser profile. Configure `.env` with your own details before running; the example file contains no sample identity or answer defaults.

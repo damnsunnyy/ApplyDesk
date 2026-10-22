@@ -32,15 +32,9 @@ window.addEventListener('message', async (event) => {
     if (!automation.wellfoundBlocklist || !automation.wellfoundBlocklist.length) {
       automation.wellfoundBlocklist = ['senior', 'principal', 'director', 'manager', 'lead', 'intern', 'staff', 'architect'];
     }
-    automation.workAuthorization ||= 'Yes';
-    automation.visaSponsorship ||= 'No';
-    automation.willingToRelocate ||= 'Yes';
-    automation.yearsOfExperience ||= '3';
-    automation.salaryExpectation ||= 'Negotiable';
-    automation.noticePeriod ||= 'Immediately';
     automation.wellfoundDailyCap ||= 50;
-    automation.wellfoundDelayMin ||= 45;
-    automation.wellfoundDelayMax ||= 75;
+    automation.wellfoundDelayMin ||= 60;
+    automation.wellfoundDelayMax ||= 150;
     if (typeof automation.wellfoundAutoRun !== 'boolean') automation.wellfoundAutoRun = true;
     automation.wellfoundScheduleTime ||= '09:00';
 

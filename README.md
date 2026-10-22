@@ -11,12 +11,11 @@ A personal job-search workspace with account-based profiles, a role matching fee
 The Wellfound auto-apply runner operates both as an **interactive Chrome Extension** (with a floating HUD, one-click dry-run & live run) and as a **standalone Playwright CLI runner**:
 
 - **Real-Time On-Screen HUD:** Displays live submission counts, skipped roles, inspected jobs, pacing countdowns, and an instant **Stop** button directly inside your Wellfound tab.
-- **Dry Run & Live Run Modes:** Test the entire application flow without submitting (`Dry Run`), or submit applications live with human-like pacing (45–75s).
-- **Intelligent Q&A Answer Bank:** Eliminates stoppages and skips by automatically answering standard Wellfound prompts (work authorization, visa sponsorship, relocation, salary expectations, notice period, years of experience, and common startup questions).
-- **Dynamic Cover Letter Generator:** Crafts personalized application notes referencing the target company, role title, your verified skills, and career summary. Supports custom templates.
-- **Optional Google Gemini AI Fallback:** Provide a Gemini API key in settings to automatically answer custom startup questions based on your CV facts.
+- **Dry Run & Live Run Modes:** Preview form filling without submitting, or enable live submissions. The daily cap cannot exceed 50 and live runs wait at least 60 seconds between submissions.
+- **Profile based answers:** Fills contact and resume fields from the saved profile. Work eligibility, sponsorship, relocation, salary, availability, and experience answers are used only when you set them. Unknown required questions cause that listing to be skipped.
+- **Cover note:** Uses your configured template or a short note based on your saved summary and skills.
 - **Automatic Tracker Sync:** All submitted applications are automatically synced to your private Apply Desk dashboard.
-- **Duplicate Protection & Fast Pacing:** Avoids re-applying to past jobs and skips incompatible postings (e.g. manual PDF requirements or location restrictions) in just 2.5s without freezing.
+- **Duplicate Protection:** Tracks submitted listing URLs locally and skips duplicates.
 
 👉 **[Read the Full Wellfound Auto-Apply Setup Guide](browser-helper/README.md)**
 
@@ -59,4 +58,4 @@ This compiles both `app.bundle.js` and `browser-helper/options.bundle.js` using 
 
 ## Private Data & Safety
 
-Supabase row-level security scopes all application and email records to your signed-in account. The Chrome helper stores form profile data locally on your machine.
+Supabase row-level security scopes all application and email records to your signed-in account. The Chrome helper stores form profile data locally on your machine. Live submission behavior depends on Wellfound and may change as its site changes.

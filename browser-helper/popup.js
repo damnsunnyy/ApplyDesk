@@ -52,7 +52,7 @@ async function startWellfound(dryRun = false) {
 
     const today = new Date().toLocaleDateString('en-CA');
     const count = wellfoundApplyState.date === today ? (Number(wellfoundApplyState.count) || 0) : 0;
-    const dailyCap = Number(automation.wellfoundDailyCap) || 50;
+    const dailyCap = Math.min(50, Math.max(1, Number(automation.wellfoundDailyCap) || 50));
     const remaining = Math.max(0, dailyCap - count);
 
     if (!dryRun && remaining <= 0) {
@@ -76,12 +76,12 @@ async function startWellfound(dryRun = false) {
     };
 
     const answers = {
-      workAuthorization: automation.workAuthorization || 'Yes',
-      visaSponsorship: automation.visaSponsorship || 'No',
-      willingToRelocate: automation.willingToRelocate || 'Yes',
-      salaryExpectation: automation.salaryExpectation || '$90,000 - $120,000',
-      noticePeriod: automation.noticePeriod || 'Immediately',
-      yearsOfExperience: automation.yearsOfExperience || '3'
+      workAuthorization: automation.workAuthorization || '',
+      visaSponsorship: automation.visaSponsorship || '',
+      willingToRelocate: automation.willingToRelocate || '',
+      salaryExpectation: automation.salaryExpectation || '',
+      noticePeriod: automation.noticePeriod || '',
+      yearsOfExperience: automation.yearsOfExperience || ''
     };
 
     const titleKeywords = (automation.wellfoundKeywords || []).map(x => x.trim()).filter(Boolean);
@@ -99,9 +99,8 @@ async function startWellfound(dryRun = false) {
       titleBlocklist,
       companyBlocklist,
       coverLetterTemplate: automation.wellfoundCoverTemplate || '',
-      geminiApiKey: automation.geminiApiKey || '',
-      delayMin: Number(automation.wellfoundDelayMin) || 45,
-      delayMax: Number(automation.wellfoundDelayMax) || 75
+      delayMin: Math.max(60, Number(automation.wellfoundDelayMin) || 60),
+      delayMax: Math.max(Math.max(60, Number(automation.wellfoundDelayMin) || 60), Number(automation.wellfoundDelayMax) || 150)
     };
 
     await chrome.scripting.executeScript({
@@ -173,6 +172,7 @@ async function triggerAutoFill() {
           ].filter(Boolean).join(' ');
           return norm(label);
         };
+        const choiceLabel = el => norm([...(el.labels || []).map(x => x.innerText), el.closest('label')?.innerText, el.getAttribute('aria-label'), el.value].filter(Boolean).join(' '));
 
         const setVal = (el, val) => {
           if (!el || val === undefined || val === null || el.disabled || el.readOnly) return false;
@@ -187,9 +187,9 @@ async function triggerAutoFill() {
           return true;
         };
 
-        const skillsList = p.skills || 'React, TypeScript, Node.js, Python, PostgreSQL, AWS';
+        const skillsList = p.skills || '';
         const skillsShort = skillsList.split(',').slice(0, 3).join(', ').trim();
-        const primaryRole = (automation.wellfoundKeywords && automation.wellfoundKeywords[0]) || 'Full Stack Software Engineer';
+        const primaryRole = (automation.wellfoundKeywords && automation.wellfoundKeywords[0]) || '';
 
         // 1. Textareas & Text Inputs
         const inputs = [...document.querySelectorAll('input:not([type="hidden"]):not([type="password"]):not([type="file"]):not([type="radio"]):not([type="checkbox"]), textarea')].filter(visible);
@@ -203,13 +203,13 @@ async function triggerAutoFill() {
 
           // Next job / Ideal role / What you are looking for (Wellfound specific)
           if (/what (are you|you re) looking for|next (job|role)|ideal (role|team|environment)|looking for in your next/i.test(key)) {
-            val = `I'm looking for a high-ownership engineering role at an agile startup where I can build and scale user-facing web apps. Excited to work with modern stacks (${skillsShort}), collaborate closely with product, and solve problems that deliver direct customer impact.`.slice(0, 290);
+            val = '';
           }
           else if (/primary role|desired title|current title|target role|job title/i.test(key)) {
             val = primaryRole;
           }
           else if (/bio\b|elevator pitch|about yourself|describe yourself|tell us about/i.test(key)) {
-            val = p.summary || `Full stack software engineer experienced with ${skillsList}. Passionate about building robust, high-performance applications with great user experiences.`;
+            val = p.summary || '';
           }
           else if (/first name/i.test(key)) {
             val = (p.name || '').trim().split(/\s+/)[0] || '';
@@ -239,34 +239,35 @@ async function triggerAutoFill() {
             val = p.location || '';
           }
           else if (/work authorization|authorized to work|legally authorized|eligible to work/i.test(key)) {
-            val = automation.workAuthorization || 'Yes';
+            val = automation.workAuthorization || '';
           }
           else if (/sponsor|visa/i.test(key)) {
-            val = automation.visaSponsorship || 'No';
+            val = automation.visaSponsorship || '';
           }
           else if (/relocat/i.test(key)) {
-            val = automation.willingToRelocate || 'Yes';
+            val = automation.willingToRelocate || '';
           }
           else if (/remote/i.test(key)) {
-            val = 'Yes';
+            val = '';
           }
           else if (/salary|compensation|expected pay|ctc/i.test(key)) {
-            val = el.type === 'number' ? '95000' : (automation.salaryExpectation || '$90,000 - $120,000');
+            const salary = automation.salaryExpectation || '';
+            val = el.type === 'number' ? (salary.match(/\d[\d,.]*/)?.[0]?.replace(/,/g, '') || '') : salary;
           }
           else if (/notice period|start date|availability|how soon/i.test(key)) {
-            val = automation.noticePeriod || 'Immediately';
+            val = automation.noticePeriod || '';
           }
           else if (/years? of experience|years with|how many years/i.test(key)) {
-            val = String(automation.yearsOfExperience || '3');
+            val = String(automation.yearsOfExperience || '');
           }
           else if (/skills|technologies|tech stack/i.test(key)) {
             val = skillsList;
           }
           else if (/cover letter|why are you interested|why this role|why do you want|pitch|note to/i.test(key)) {
-            val = `I am very excited about this role and company mission. With my background in ${skillsShort}, I have built resilient web applications and delivered features with strong business impact. I would love to bring my expertise to your engineering team.\n\nBest regards,\n${p.name}\n${p.email} | ${p.phone}`;
+            val = automation.wellfoundCoverTemplate || '';
           }
           else if (/education|degree|university|college/i.test(key)) {
-            val = p.education || 'Bachelor of Science in Computer Science';
+            val = p.education || '';
           }
           else if (/experience|employment history/i.test(key)) {
             val = p.experience || p.summary || '';
@@ -290,28 +291,15 @@ async function triggerAutoFill() {
           if (radios.some(r => r.checked)) continue;
           const groupText = norm(radios[0].closest('fieldset,div,section')?.innerText || name);
 
-          let targetOption = /sponsor/i.test(groupText)
-            ? (/yes/i.test(automation.visaSponsorship || '') ? /yes/i : /no/i)
-            : (/authorized|relocat|remote|eligib/i.test(groupText) ? /yes/i : /yes|agree|accept|prefer not|decline/i);
-
-          let chosen = radios.find(r => targetOption.test(labelFor(r))) || radios[0];
+          const configured = /sponsor/i.test(groupText) ? automation.visaSponsorship
+            : /authorized|eligib|work permit|right to work/i.test(groupText) ? automation.workAuthorization
+            : /relocat/i.test(groupText) ? automation.willingToRelocate : '';
+          if (!configured) continue;
+          const chosen = radios.find(r => choiceLabel(r) === norm(configured));
           if (chosen) {
             chosen.click();
             chosen.checked = true;
             chosen.dispatchEvent(new Event('change', { bubbles: true }));
-            filled++;
-          }
-        }
-
-        // 3. Checkboxes (Agreements, declarations, terms)
-        const checkboxes = [...document.querySelectorAll('input[type="checkbox"]')].filter(visible);
-        for (const cb of checkboxes) {
-          if (cb.checked) continue;
-          const cbLabel = labelFor(cb);
-          if (/agree|certify|confirm|acknowledge|understand|policy|terms|truthful/i.test(cbLabel) || cb.required) {
-            cb.click();
-            cb.checked = true;
-            cb.dispatchEvent(new Event('change', { bubbles: true }));
             filled++;
           }
         }
@@ -322,9 +310,13 @@ async function triggerAutoFill() {
           if (sel.value && !/^(select|choose|pick)/i.test(norm(sel.selectedOptions[0]?.innerText || ''))) continue;
           const selLabel = labelFor(sel);
 
-          let targetVal = /sponsor/i.test(selLabel) ? 'No' : (/authorized|relocat|eligib/i.test(selLabel) ? 'Yes' : '');
-          const opt = [...sel.options].find(o => norm(o.text).includes(targetVal.toLowerCase()) || norm(o.value).includes(targetVal.toLowerCase())) ||
-            [...sel.options].find(o => o.value && !/^(select|choose)/i.test(o.text));
+          const targetVal = /sponsor/i.test(selLabel) ? automation.visaSponsorship
+            : /authorized|eligib|work permit|right to work/i.test(selLabel) ? automation.workAuthorization
+            : /relocat/i.test(selLabel) ? automation.willingToRelocate
+            : /salary|compensation|expected pay|ctc/i.test(selLabel) ? automation.salaryExpectation
+            : /notice period|start date|availability/i.test(selLabel) ? automation.noticePeriod : '';
+          if (!targetVal) continue;
+          const opt = [...sel.options].find(o => norm(o.text) === norm(targetVal) || norm(o.value) === norm(targetVal));
 
           if (opt) {
             sel.value = opt.value;

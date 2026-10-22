@@ -27,7 +27,7 @@ async function startScheduledRun() {
 
   const today = new Date().toLocaleDateString('en-CA');
   const count = wellfoundApplyState.date === today ? Number(wellfoundApplyState.count) || 0 : 0;
-  const dailyCap = Number(automation.wellfoundDailyCap) || 50;
+  const dailyCap = Math.min(50, Math.max(1, Number(automation.wellfoundDailyCap) || 50));
   const remaining = Math.max(0, dailyCap - count);
   if (remaining <= 0) return;
 
@@ -69,12 +69,12 @@ async function startScheduledRun() {
   };
 
   const answers = {
-    workAuthorization: automation.workAuthorization || 'Yes',
-    visaSponsorship: automation.visaSponsorship || 'No',
-    willingToRelocate: automation.willingToRelocate || 'Yes',
-    salaryExpectation: automation.salaryExpectation || '$90,000 - $120,000',
-    noticePeriod: automation.noticePeriod || 'Immediately',
-    yearsOfExperience: automation.yearsOfExperience || '3',
+    workAuthorization: automation.workAuthorization || '',
+    visaSponsorship: automation.visaSponsorship || '',
+    willingToRelocate: automation.willingToRelocate || '',
+    salaryExpectation: automation.salaryExpectation || '',
+    noticePeriod: automation.noticePeriod || '',
+    yearsOfExperience: automation.yearsOfExperience || '',
   };
 
   const titleKeywords = (automation.wellfoundKeywords || []).map(x => x.trim()).filter(Boolean);
@@ -92,9 +92,8 @@ async function startScheduledRun() {
     titleBlocklist,
     companyBlocklist,
     coverLetterTemplate: automation.wellfoundCoverTemplate || '',
-    geminiApiKey: automation.geminiApiKey || '',
-    delayMin: Number(automation.wellfoundDelayMin) || 45,
-    delayMax: Number(automation.wellfoundDelayMax) || 75,
+    delayMin: Math.max(60, Number(automation.wellfoundDelayMin) || 60),
+    delayMax: Math.max(Math.max(60, Number(automation.wellfoundDelayMin) || 60), Number(automation.wellfoundDelayMax) || 150),
   };
 
   await chrome.scripting.executeScript({
@@ -113,7 +112,23 @@ async function startScheduledRun() {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-  const { automation = {} } = await chrome.storage.local.get('automation');
+  const { automation = {}, wellfoundAnswerDefaultsMigrated = false } = await chrome.storage.local.get(['automation', 'wellfoundAnswerDefaultsMigrated']);
+  if (!wellfoundAnswerDefaultsMigrated) {
+    if (automation.workAuthorization === 'Yes' && automation.visaSponsorship === 'No' &&
+        automation.willingToRelocate === 'Yes' && String(automation.yearsOfExperience) === '3' &&
+        automation.salaryExpectation === 'Negotiable' && automation.noticePeriod === 'Immediately') {
+      automation.workAuthorization = '';
+      automation.visaSponsorship = '';
+      automation.willingToRelocate = '';
+      automation.yearsOfExperience = '';
+      automation.salaryExpectation = '';
+      automation.noticePeriod = '';
+    }
+    automation.wellfoundDailyCap = Math.min(50, Math.max(1, Number(automation.wellfoundDailyCap) || 50));
+    automation.wellfoundDelayMin = Math.max(60, Number(automation.wellfoundDelayMin) || 60);
+    automation.wellfoundDelayMax = Math.max(automation.wellfoundDelayMin, 60, Number(automation.wellfoundDelayMax) || 150);
+    await chrome.storage.local.set({ automation, wellfoundAnswerDefaultsMigrated: true });
+  }
   if (automation.wellfoundAutoRun) await scheduleDaily(automation.wellfoundScheduleTime || '09:00');
 });
 

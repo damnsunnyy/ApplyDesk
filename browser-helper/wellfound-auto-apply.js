@@ -16,6 +16,14 @@
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const norm = value => String(value || '').replace(/\s+/g, ' ').trim();
   const visible = el => !!el && el.getClientRects().length > 0 && !el.disabled;
+  const getLocal = async key => {
+    if (globalThis.chrome?.storage?.local) return (await chrome.storage.local.get(key))[key];
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch { return null; }
+  };
+  const setLocal = async (key, value) => {
+    if (globalThis.chrome?.storage?.local) return chrome.storage.local.set({ [key]: value });
+    localStorage.setItem(key, JSON.stringify(value));
+  };
 
   // --- FLOATING HUD (HEADS-UP DISPLAY) ---
   let hudEl = document.querySelector('#applydesk-wellfound-hud');
@@ -110,10 +118,10 @@
   // --- CONFIGURATION & PROFILE SETUP ---
   const today = new Date().toLocaleDateString('en-CA');
   const stateKey = 'wellfoundApplyState';
-  const saved = (await chrome.storage.local.get(stateKey))[stateKey] || { date: today, count: 0, applications: [] };
+  const saved = (await getLocal(stateKey)) || { date: today, count: 0, applications: [] };
   const state = saved.date === today ? saved : { date: today, count: 0, applications: [] };
 
-  const maxApplications = Number(cfg.maxApplications) || 50;
+  const maxApplications = Math.min(50, Math.max(0, Number(cfg.maxApplications) || 50));
   const max = isDryRun ? 50 : Math.min(maxApplications, Math.max(0, maxApplications - state.count));
 
   const profile = cfg.CV || {};
@@ -168,6 +176,7 @@
     el.name,
     el.id
   ].filter(Boolean).join(' '));
+  const choiceLabel = el => norm([...(el.labels || []).map(label => label.innerText), el.closest('label')?.innerText, el.getAttribute('aria-label'), el.value].filter(Boolean).join(' '));
 
   // --- COVER LETTER GENERATOR ---
   function generateCoverLetter(company, title) {
@@ -178,30 +187,13 @@
         .replace(/\{name\}/gi, profile.name || '')
         .replace(/\{email\}/gi, profile.email || '')
         .replace(/\{phone\}/gi, profile.phone || '')
-        .replace(/\{skills\}/gi, profile.skills || 'software engineering')
+        .replace(/\{skills\}/gi, profile.skills || '')
         .replace(/\{summary\}/gi, profile.summary || '')
         .replace(/\{linkedin\}/gi, profile.linkedin || '')
         .replace(/\{portfolio\}/gi, profile.portfolio || profile.website || '');
     }
 
-    const highlightsText = Array.isArray(profile.highlights) && profile.highlights.length
-      ? `\n\nKey highlights:\n• ${profile.highlights.slice(0, 3).join('\n• ')}`
-      : '';
-
-    return `Hi ${company || 'Hiring'} team,
-
-I am writing to express my strong interest in the ${title || 'open'} position at ${company || 'your company'}.
-
-With my background in ${profile.skills || 'modern software development'}, I have built scalable web applications and solved critical engineering challenges. My experience aligns well with your team's goals, and I am excited about the opportunity to bring my skills to ${company || 'your startup'}.
-
-${profile.summary || ''}${highlightsText}
-
-I would welcome the opportunity to discuss how my background fits your team.
-
-Best regards,
-${profile.name || ''}
-${profile.email || ''} | ${profile.phone || ''}
-${profile.portfolio || profile.website || profile.linkedin || ''}`.trim();
+    return `Hi ${company || 'Hiring'} team,\n\nI am applying for the ${title || 'position'} role.\n\n${profile.summary || ''}\n\n${profile.skills ? `My skills include ${profile.skills}.\n\n` : ''}Best regards,\n${profile.name || ''}`.trim();
   }
 
   // --- BUILT-IN Q&A ANSWER BANK (Inspired by ankitbaghel01/wellfound_autoApply) ---
@@ -210,30 +202,30 @@ ${profile.portfolio || profile.website || profile.linkedin || ''}`.trim();
 
     // 1. Work authorization & legal eligibility
     if (/work authorization|authorized to work|legally authorized|eligible to work|legal right|work permit/.test(q)) {
-      return answers.workAuthorization || 'Yes';
+      return answers.workAuthorization || '';
     }
     // 2. Visa sponsorship
     if (/sponsor|require sponsorship|need sponsorship|visa support|future sponsorship/.test(q)) {
-      return answers.visaSponsorship || 'No';
+      return answers.visaSponsorship || '';
     }
     // 3. Relocation & remote
     if (/relocat|willing to move|open to relocate/.test(q)) {
-      return answers.willingToRelocate || 'Yes';
+      return answers.willingToRelocate || '';
     }
     if (/remote|work from home|telecommute|distributed team/.test(q)) {
-      return 'Yes';
+      return '';
     }
     // 4. Compensation / salary expectations
     if (/salary|compensation|ctc|pay expectation|expected pay|rate/.test(q)) {
-      return answers.salaryExpectation || 'Negotiable';
+      return answers.salaryExpectation || '';
     }
     // 5. Notice period / start date / availability
     if (/notice period|start date|how soon|when can you start|availability/.test(q)) {
-      return answers.noticePeriod || 'Immediately';
+      return answers.noticePeriod || '';
     }
     // 6. Years of experience
     if (/years? of experience|years have you|how many years/.test(q)) {
-      return String(answers.yearsOfExperience || '3');
+      return String(answers.yearsOfExperience || '');
     }
     // 7. Personal & contact info
     if (/first name/.test(q)) return String(profile.name || '').trim().split(/\s+/)[0] || '';
@@ -249,60 +241,25 @@ ${profile.portfolio || profile.website || profile.linkedin || ''}`.trim();
     if (/skill|technology|tech stack|tools/.test(q)) return profile.skills || '';
 
     // 8. Wellfound next role / ideal job (e.g. "Describe what you are looking for in your next job")
-    if (/what (are you|you're) looking for|next (job|role)|ideal (role|team|environment)|looking for in your next/i.test(q)) {
-      const skillsSnippet = (profile.skills || 'React, Node.js, Python').split(',').slice(0, 3).join(', ').trim();
-      return `I'm looking for a high-ownership engineering role at an agile startup where I can build and scale user-facing web apps. Excited to work with modern stacks (${skillsSnippet}), collaborate closely with product, and solve problems that deliver direct customer impact.`.slice(0, 290);
-    }
+    if (/what (are you|you're) looking for|next (job|role)|ideal (role|team|environment)|looking for in your next/i.test(q)) return '';
     if (/primary role|target role|desired title|current title|what is your title/i.test(q)) {
-      return (Array.isArray(profile.targetRoles) && profile.targetRoles[0]) || 'Full Stack Software Engineer';
+      return (Array.isArray(profile.targetRoles) && profile.targetRoles[0]) || '';
     }
     if (/bio\b|elevator pitch|about yourself|describe yourself|tell us about|summary/i.test(q)) {
-      return profile.summary || `Full stack software engineer experienced with ${profile.skills || 'modern web technologies'}. Passionate about building robust, high-performance applications with great user experiences.`;
+      return profile.summary || '';
     }
     if (/why (this|are you|do you|work with|join)|interest in (this|our|the)|pitch/i.test(q)) {
-      return `I am genuinely excited about ${job.company}'s mission and the chance to contribute to the ${job.title} role. My experience with ${profile.skills || 'modern development'} directly matches what your team is building.`;
+      return '';
     }
     if (/achievement|proudest|biggest project|accomplishment/i.test(q)) {
-      return `One of my proudest achievements was architecting and delivering high-performance features, reducing latency, and delivering reliable software for users as highlighted in my experience.`;
+      return '';
     }
     if (/challenging (bug|problem|technical)|difficult issue/i.test(q)) {
-      return `A key challenge I resolved involved diagnosing an intermittent state synchronization bottleneck in production, implementing rigorous regression testing, and optimizing data flow.`;
+      return '';
     }
 
     return '';
   };
-
-  // --- GEMINI AI FALLBACK (If GEMINI_KEY is provided in cfg) ---
-  async function askGeminiFallback(question, job) {
-    if (!cfg.geminiApiKey) return null;
-    try {
-      const promptText = `You are a job applicant answering an application form question.
-Company: ${job.company}
-Role: ${job.title}
-Applicant Name: ${profile.name}
-Applicant Skills: ${profile.skills}
-Applicant Summary: ${profile.summary}
-Applicant Facts: ${(profile.highlights || []).join('; ')}
-
-Question: "${question}"
-
-Provide a concise, professional, 1-to-2 sentence answer in first person. Do not use markdown or quotes.`;
-
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(cfg.geminiApiKey)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: promptText }] }],
-          generationConfig: { maxOutputTokens: 120, temperature: 0.2 }
-        })
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || null;
-    } catch {
-      return null;
-    }
-  }
 
   // --- UI HELPERS ---
   const closePanel = panel => {
@@ -426,7 +383,7 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
 
     // --- 1. HANDLE COVER LETTER / NOTE TEXTAREA ---
     const textareas = [...panel.querySelectorAll('textarea')].filter(visible);
-    const coverTextarea = textareas.find(ta => /note|pitch|cover|why|interest|message/i.test(labelOf(ta))) || textareas[0];
+    const coverTextarea = textareas.find(ta => /cover letter|cover note|application note/i.test(labelOf(ta)));
     if (coverTextarea && !coverTextarea.value.trim()) {
       const letter = generateCoverLetter(job.company, job.title);
       setValue(coverTextarea, letter);
@@ -446,21 +403,11 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
         // If numeric input and answer contains numbers, extract them
         if (input.type === 'number' && answer) {
           const numMatch = answer.match(/\d[\d,.]*/);
-          answer = numMatch ? numMatch[0].replace(/,/g, '') : '90000';
-        }
-
-        // Optional Gemini fallback for unknown required fields
-        if (!answer && input.required && cfg.geminiApiKey) {
-          updateStatus(`Asking Gemini AI to generate answer for: "${label.slice(0, 40)}"…`);
-          answer = await askGeminiFallback(label, job);
+          answer = numMatch ? numMatch[0].replace(/,/g, '') : '';
         }
 
         if (answer) {
           setValue(input, answer);
-        } else if (input.required) {
-          // Final fallback for required unknown input: supply brief tailored string
-          const generic = `${profile.name} - ${profile.skills || 'experienced software engineer'}`;
-          setValue(input, generic);
         }
       }
 
@@ -481,30 +428,15 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
       if (radios.some(r => r.checked)) continue;
       const groupText = norm(radios[0].closest('fieldset,div')?.innerText || name).toLowerCase();
 
-      // Determine ideal choice: Yes or No
-      let targetOption = /sponsor/i.test(groupText)
-        ? (answers.visaSponsorship === 'Yes' ? /yes/i : /no/i)
-        : (/authorized|relocat|remote|eligib/i.test(groupText) ? /yes/i : /yes|agree|accept|prefer not/i);
-
-      let chosen = radios.find(r => targetOption.test(labelOf(r))) || radios[0];
+      const configured = /sponsor/i.test(groupText) ? answers.visaSponsorship
+        : /authorized|eligible|work permit|right to work/i.test(groupText) ? answers.workAuthorization
+        : /relocat/i.test(groupText) ? answers.willingToRelocate : '';
+      if (!configured) continue;
+      const chosen = radios.find(r => choiceLabel(r).toLowerCase() === String(configured).toLowerCase());
       if (chosen) {
         chosen.click();
         chosen.checked = true;
         chosen.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-    }
-
-    // --- 4. HANDLE CHECKBOXES (Agreements / Confirmations) ---
-    const checkboxes = [...panel.querySelectorAll('input[type="checkbox"]')].filter(visible);
-    for (const cb of checkboxes) {
-      const cbLabel = labelOf(cb).toLowerCase();
-      // Check agreement / declaration / consent / remote understanding checkboxes
-      if (/agree|certify|confirm|acknowledge|understand|policy|terms|truthful/i.test(cbLabel) || cb.required) {
-        if (!cb.checked) {
-          cb.click();
-          cb.checked = true;
-          cb.dispatchEvent(new Event('change', { bubbles: true }));
-        }
       }
     }
 
@@ -514,9 +446,12 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
       if (sel.value && !/^(select|choose|pick)/i.test(norm(sel.selectedOptions[0]?.innerText || ''))) continue;
       const selLabel = labelOf(sel).toLowerCase();
 
-      let targetVal = /sponsor/i.test(selLabel) ? 'No' : (/authorized|relocat|eligib/i.test(selLabel) ? 'Yes' : '');
-      const opt = [...sel.options].find(o => norm(o.text).toLowerCase().includes(targetVal.toLowerCase()) || norm(o.value).toLowerCase().includes(targetVal.toLowerCase())) ||
-        [...sel.options].find(o => o.value && !/^(select|choose)/i.test(o.text));
+      const targetVal = /sponsor/i.test(selLabel) ? answers.visaSponsorship
+        : /authorized|eligible|work permit|right to work/i.test(selLabel) ? answers.workAuthorization
+        : /relocat/i.test(selLabel) ? answers.willingToRelocate
+        : answerFor(selLabel, job);
+      if (!targetVal) continue;
+      const opt = [...sel.options].find(o => norm(o.text).toLowerCase() === String(targetVal).toLowerCase() || norm(o.value).toLowerCase() === String(targetVal).toLowerCase());
 
       if (opt) {
         sel.value = opt.value;
@@ -528,6 +463,20 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
     const missingFile = [...panel.querySelectorAll('input[type="file"][required]')].some(f => !f.files?.length);
     if (missingFile) {
       updateStatus(`Skipped ${job.title}: requires manual resume file upload.`, '#e06c75');
+      closePanel(panel);
+      return false;
+    }
+
+    const requiredControls = [...panel.querySelectorAll('input[required],textarea[required],select[required]')];
+    const radioNames = new Set([...panel.querySelectorAll('input[type="radio"][required]')].map(r => r.name));
+    const unfilledRequired = requiredControls.some(el => {
+      if (el.type === 'file') return !el.files?.length;
+      if (el.type === 'radio' || el.type === 'checkbox') return !el.checked;
+      if (el.tagName === 'SELECT') return !el.value || /^(select|choose|pick)/i.test(norm(el.selectedOptions[0]?.textContent || ''));
+      return !String(el.value || '').trim();
+    }) || [...radioNames].some(name => ![...panel.querySelectorAll('input[type="radio"]')].some(r => r.name === name && r.checked));
+    if (unfilledRequired) {
+      updateStatus(`Skipped ${job.title}: a required question needs an answer from you.`, '#e06c75');
       closePanel(panel);
       return false;
     }
@@ -583,7 +532,7 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
       url: job.href,
       description: job.description
     });
-    await chrome.storage.local.set({ [stateKey]: state });
+    await setLocal(stateKey, state);
 
     submittedCount++;
     updateMetrics(submittedCount, skippedCount, seenCount);
@@ -627,9 +576,9 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
           if (submittedCount >= max || window.__applyDeskWellfoundStop) break;
 
           // Delay after successful application
-          const waitSecs = isDryRun
-            ? 3
-            : Math.floor((cfg.delayMin || 45) + Math.random() * ((cfg.delayMax || 75) - (cfg.delayMin || 45)));
+          const minWait = Math.max(60, Number(cfg.delayMin) || 60);
+          const maxWait = Math.max(minWait, 60, Number(cfg.delayMax) || 150);
+          const waitSecs = isDryRun ? 3 : Math.floor(minWait + Math.random() * (maxWait - minWait));
 
           for (let s = waitSecs; s > 0 && !window.__applyDeskWellfoundStop; s--) {
             if (timerEl) {
@@ -672,10 +621,10 @@ Provide a concise, professional, 1-to-2 sentence answer in first person. Do not 
 
     // Broadcast finished event so Apply Desk tracker syncs records
     if (state.applications.length) {
-      chrome.runtime.sendMessage({
+      globalThis.chrome?.runtime?.sendMessage?.({
         type: 'wellfound-run-finished',
         applications: state.applications.slice(-50)
-      }).catch(() => {});
+      })?.catch?.(() => {});
     }
   }
 })();

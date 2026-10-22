@@ -38,19 +38,10 @@ function loadEnv() {
 const env = { ...process.env, ...loadEnv() };
 
 const PROFILE_DIR = path.resolve(process.cwd(), '.wellfound-chrome-session');
-const LOG_CSV = path.resolve(process.cwd(), 'applications.csv');
 
 function log(msg) {
   const time = new Date().toLocaleTimeString();
   console.log(`[${time}] ${msg}`);
-}
-
-function appendCsv(job, status) {
-  if (!fs.existsSync(LOG_CSV)) {
-    fs.writeFileSync(LOG_CSV, 'Date,Title,Company,URL,Status\n');
-  }
-  const row = `"${new Date().toISOString()}","${(job.title || '').replace(/"/g, '""')}","${(job.company || '').replace(/"/g, '""')}","${job.url || ''}","${status}"\n`;
-  fs.appendFileSync(LOG_CSV, row);
 }
 
 async function getBrowserContext() {
@@ -67,7 +58,7 @@ async function getBrowserContext() {
   const context = await playwright.chromium.launchPersistentContext(PROFILE_DIR, {
     headless: false,
     viewport: { width: 1280, height: 800 },
-    args: ['--disable-blink-features=AutomationControlled']
+    args: []
   });
 
   return context;
@@ -101,9 +92,9 @@ async function runAutoApply(isLive = false) {
   const companyBlocklist = (env.COMPANY_BLOCKLIST || '')
     .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
 
-  const dailyLimit = Number(env.DAILY_LIMIT) || 50;
-  const minDelay = Number(env.MIN_DELAY_SECONDS) || 45;
-  const maxDelay = Number(env.MAX_DELAY_SECONDS) || 75;
+  const dailyLimit = Math.min(50, Math.max(1, Number(env.DAILY_LIMIT) || 50));
+  const minDelay = Math.max(60, Number(env.MIN_DELAY_SECONDS) || 60);
+  const maxDelay = Math.max(minDelay, 60, Number(env.MAX_DELAY_SECONDS) || 150);
 
   log(`Mode: ${isLive ? '🔴 LIVE RUN (Submissions active)' : '🟡 DRY RUN (Testing mode, will not submit)'}`);
   log(`Target keywords: ${keywords.join(', ')}`);
@@ -141,12 +132,12 @@ async function runAutoApply(isLive = false) {
       highlights: (env.PROFESSIONAL_SUMMARY || '').split('.').filter(Boolean)
     },
     answers: {
-      workAuthorization: env.WORK_AUTHORIZATION || 'Yes',
-      visaSponsorship: env.VISA_SPONSORSHIP || 'No',
-      willingToRelocate: env.WILLING_TO_RELOCATE || 'Yes',
-      yearsOfExperience: env.YEARS_OF_EXPERIENCE || '3',
-      salaryExpectation: env.SALARY_EXPECTATION || 'Negotiable',
-      noticePeriod: env.NOTICE_PERIOD || 'Immediately'
+      workAuthorization: env.WORK_AUTHORIZATION || '',
+      visaSponsorship: env.VISA_SPONSORSHIP || '',
+      willingToRelocate: env.WILLING_TO_RELOCATE || '',
+      yearsOfExperience: env.YEARS_OF_EXPERIENCE || '',
+      salaryExpectation: env.SALARY_EXPECTATION || '',
+      noticePeriod: env.NOTICE_PERIOD || ''
     },
     dryRun: !isLive,
     maxApplications: dailyLimit,
@@ -154,7 +145,6 @@ async function runAutoApply(isLive = false) {
     titleBlocklist: blocklist,
     companyBlocklist: companyBlocklist,
     coverLetterTemplate: env.COVER_LETTER_TEMPLATE || '',
-    geminiApiKey: env.GEMINI_API_KEY || '',
     delayMin: minDelay,
     delayMax: maxDelay
   };

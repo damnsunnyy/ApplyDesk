@@ -13,17 +13,16 @@ const defaultAutomation = {
   ],
   wellfoundBlocklist: ['senior', 'principal', 'director', 'manager', 'lead', 'intern', 'staff', 'architect'],
   wellfoundCompanyBlocklist: [],
-  workAuthorization: 'Yes',
-  visaSponsorship: 'No',
-  willingToRelocate: 'Yes',
-  yearsOfExperience: '3',
-  salaryExpectation: 'Negotiable',
-  noticePeriod: 'Immediately',
+  workAuthorization: '',
+  visaSponsorship: '',
+  willingToRelocate: '',
+  yearsOfExperience: '',
+  salaryExpectation: '',
+  noticePeriod: '',
   wellfoundCoverTemplate: '',
-  geminiApiKey: '',
   wellfoundDailyCap: 50,
-  wellfoundDelayMin: 45,
-  wellfoundDelayMax: 75,
+  wellfoundDelayMin: 60,
+  wellfoundDelayMax: 150,
   wellfoundAutoRun: false,
   wellfoundScheduleTime: '09:00',
   autoSubmit: false,
@@ -49,17 +48,16 @@ chrome.storage.local.get(['profile', 'automation'], ({ profile, automation }) =>
   setVal('wellfoundKeywords', (a.wellfoundKeywords || []).join('\n'));
   setVal('wellfoundBlocklist', (a.wellfoundBlocklist || []).join('\n'));
   setVal('wellfoundCompanyBlocklist', (a.wellfoundCompanyBlocklist || []).join('\n'));
-  setVal('workAuthorization', a.workAuthorization || 'Yes');
-  setVal('visaSponsorship', a.visaSponsorship || 'No');
-  setVal('willingToRelocate', a.willingToRelocate || 'Yes');
-  setVal('yearsOfExperience', a.yearsOfExperience || '3');
-  setVal('salaryExpectation', a.salaryExpectation || 'Negotiable');
-  setVal('noticePeriod', a.noticePeriod || 'Immediately');
+  setVal('workAuthorization', a.workAuthorization || '');
+  setVal('visaSponsorship', a.visaSponsorship || '');
+  setVal('willingToRelocate', a.willingToRelocate || '');
+  setVal('yearsOfExperience', a.yearsOfExperience || '');
+  setVal('salaryExpectation', a.salaryExpectation || '');
+  setVal('noticePeriod', a.noticePeriod || '');
   setVal('wellfoundCoverTemplate', a.wellfoundCoverTemplate || '');
-  setVal('geminiApiKey', a.geminiApiKey || '');
   setVal('wellfoundDailyCap', a.wellfoundDailyCap || 50);
-  setVal('wellfoundDelayMin', a.wellfoundDelayMin || 45);
-  setVal('wellfoundDelayMax', a.wellfoundDelayMax || 75);
+  setVal('wellfoundDelayMin', a.wellfoundDelayMin || 60);
+  setVal('wellfoundDelayMax', a.wellfoundDelayMax || 150);
   setVal('wellfoundScheduleTime', a.wellfoundScheduleTime || '09:00');
   setVal('domains', (a.domains || []).join('\n'));
 
@@ -179,17 +177,16 @@ document.querySelector('#profile-form').addEventListener('submit', async event =
       .split(/[\n,;]/).map(v => v.trim()).filter(Boolean),
     wellfoundCompanyBlocklist: String(formData.get('wellfoundCompanyBlocklist') || '')
       .split(/[\n,;]/).map(v => v.trim()).filter(Boolean),
-    workAuthorization: String(formData.get('workAuthorization') || 'Yes'),
-    visaSponsorship: String(formData.get('visaSponsorship') || 'No'),
-    willingToRelocate: String(formData.get('willingToRelocate') || 'Yes'),
-    yearsOfExperience: String(formData.get('yearsOfExperience') || '3'),
-    salaryExpectation: String(formData.get('salaryExpectation') || 'Negotiable'),
-    noticePeriod: String(formData.get('noticePeriod') || 'Immediately'),
+    workAuthorization: String(formData.get('workAuthorization') || ''),
+    visaSponsorship: String(formData.get('visaSponsorship') || ''),
+    willingToRelocate: String(formData.get('willingToRelocate') || ''),
+    yearsOfExperience: String(formData.get('yearsOfExperience') || ''),
+    salaryExpectation: String(formData.get('salaryExpectation') || ''),
+    noticePeriod: String(formData.get('noticePeriod') || ''),
     wellfoundCoverTemplate: String(formData.get('wellfoundCoverTemplate') || '').trim(),
-    geminiApiKey: String(formData.get('geminiApiKey') || '').trim(),
-    wellfoundDailyCap: Number(formData.get('wellfoundDailyCap')) || 50,
-    wellfoundDelayMin: Number(formData.get('wellfoundDelayMin')) || 45,
-    wellfoundDelayMax: Number(formData.get('wellfoundDelayMax')) || 75,
+    wellfoundDailyCap: Math.min(50, Math.max(1, Number(formData.get('wellfoundDailyCap')) || 50)),
+    wellfoundDelayMin: Math.max(60, Number(formData.get('wellfoundDelayMin')) || 60),
+    wellfoundDelayMax: Math.max(Math.max(60, Number(formData.get('wellfoundDelayMin')) || 60), Number(formData.get('wellfoundDelayMax')) || 150),
     wellfoundAutoRun: formData.has('wellfoundAutoRun'),
     wellfoundScheduleTime: String(formData.get('wellfoundScheduleTime') || '09:00'),
     autoSubmit: formData.has('autoSubmit'),

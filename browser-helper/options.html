@@ -59,12 +59,14 @@
       <div class="grid-2">
         <label>Legally authorized to work?
           <select name="workAuthorization">
+            <option value="">Leave unanswered</option>
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
         </label>
         <label>Require visa sponsorship?
           <select name="visaSponsorship">
+            <option value="">Leave unanswered</option>
             <option value="No">No</option>
             <option value="Yes">Yes</option>
           </select>
@@ -74,22 +76,23 @@
       <div class="grid-2">
         <label>Willing to relocate?
           <select name="willingToRelocate">
+            <option value="">Leave unanswered</option>
             <option value="Yes">Yes</option>
             <option value="No">No</option>
             <option value="Negotiable">Negotiable</option>
           </select>
         </label>
         <label>Years of experience
-          <input name="yearsOfExperience" type="text" placeholder="e.g. 3 or 4" value="3">
+          <input name="yearsOfExperience" type="text" placeholder="e.g. 3 or 4">
         </label>
       </div>
 
       <div class="grid-2">
         <label>Expected salary / compensation
-          <input name="salaryExpectation" type="text" placeholder="e.g. $90,000 - $120,000 or Negotiable" value="Negotiable">
+          <input name="salaryExpectation" type="text" placeholder="e.g. $90,000 - $120,000 or Negotiable">
         </label>
         <label>Notice period / Start date
-          <input name="noticePeriod" type="text" placeholder="e.g. Immediately or 2 weeks" value="Immediately">
+          <input name="noticePeriod" type="text" placeholder="e.g. Immediately or 2 weeks">
         </label>
       </div>
 
@@ -97,20 +100,15 @@
         <textarea name="wellfoundCoverTemplate" rows="6" placeholder="Hi {company} team,&#10;&#10;I am excited to apply for the {title} position. With my background in {skills}, I have built reliable web applications and solved core engineering challenges. I would love to bring my skills to {company}.&#10;&#10;Best regards,&#10;{name}&#10;{email} | {phone}&#10;{portfolio}"></textarea>
       </label>
 
-      <label>Google Gemini API Key (Optional AI Fallback)
-        <input name="geminiApiKey" type="password" placeholder="AIzaSy... (free key from Google AI Studio)">
-      </label>
-      <p class="help">If provided, any unexpected custom questions asked by startups on Wellfound are dynamically answered using your CV facts via Gemini Flash.</p>
-
       <div class="grid-2">
         <label>Daily application cap
-          <input name="wellfoundDailyCap" type="number" min="1" max="100" value="50">
+          <input name="wellfoundDailyCap" type="number" min="1" max="50" value="50">
         </label>
         <label>Delay between submissions (seconds)
           <div style="display:flex; gap:6px; align-items:center;">
-            <input name="wellfoundDelayMin" type="number" min="10" max="300" value="45" style="width:70px;">
+            <input name="wellfoundDelayMin" type="number" min="60" max="300" value="60" style="width:70px;">
             <span>to</span>
-            <input name="wellfoundDelayMax" type="number" min="10" max="300" value="75" style="width:70px;">
+            <input name="wellfoundDelayMax" type="number" min="60" max="300" value="150" style="width:70px;">
             <span>sec</span>
           </div>
         </label>
