@@ -1,21 +1,81 @@
-# Apply Desk browser helper
+# Apply Desk — Wellfound Auto-Apply & Browser Helper
 
-This optional Chrome Manifest V3 extension captures visible job-page text into the Apply Desk, logs an open email you explicitly choose, and fills blank form fields it can confidently identify from your local profile. It asks for access only to the active tab after you click a button. Profile details remain in this browser's extension storage.
+Inspired by [ankitbaghel01/wellfound_autoApply](https://github.com/ankitbaghel01/wellfound_autoApply), this Chrome Extension provides an intelligent, automated job application engine for **Wellfound** (formerly AngelList Talent) alongside one-click autofill for career portals and Gmail email logging.
 
-The live Apply Desk is at [damnsunnyy.github.io/ApplyDesk](https://damnsunnyy.github.io/ApplyDesk/). Each friend signs up in their own account; the browser helper profile is configured per device.
+## Core Features (Inspired by `wellfound_autoApply`)
 
-## Install in Chrome
+* **Live On-Screen HUD:** A floating dashboard inside your Wellfound tab displays live application counts, skipped roles, seen roles, pacing delays, and an immediate **Stop** button.
+* **Dry Run Mode:** Test the runner safely without submitting (`🧪 Dry Run`). It finds matching jobs, opens the modal, populates the cover letter and answers, highlights the fields, pauses for visual inspection, and cleanly closes the modal.
+* **Live Run Mode:** Submits matching jobs, respects human-paced intervals (45–75s) to avoid bot flags, updates daily submission state (cap: 50/day), and auto-syncs with your [Apply Desk Tracker](https://damnsunnyy.github.io/ApplyDesk/).
+* **Smart Q&A Answer Bank:** Automatically answers standard Wellfound startup questions without stoppage or premature skips:
+  * Work authorization & eligibility (configurable: default "Yes")
+  * Visa sponsorship requirements (configurable: default "No")
+  * Relocation & remote preferences (configurable: default "Yes")
+  * Desired compensation / salary expectations
+  * Notice period & start date availability
+  * Years of experience
+  * Common startup questions (e.g. "Why this company?", "Proudest achievement", etc.)
+* **Dynamic Cover Letter Generator:** Builds tailored notes addressing the company and position by name, referencing your skills and background. Supports custom templates with `{company}`, `{title}`, `{name}`, `{skills}`, etc.
+* **Optional Google Gemini AI Fallback:** Provide an optional Gemini API key in Options to dynamically generate tailored 1–2 sentence answers for unique, unexpected startup application prompts using your CV facts.
+* **Duplicate Protection:** Stores previously applied job URLs across sessions so you never re-apply to the same listing.
+* **Fast-Paced Skipping:** If a listing requires a manual resume PDF upload or is outside eligible regions, it closes the modal and continues to the next job in just 2.5 seconds (no long pauses on skips).
 
-1. Download this repository or its `browser-helper` folder to your computer.
-2. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this folder.
-3. Open the extension’s **Details → Extension options**. Upload a text-based PDF resume to fill blank contact, summary, skills, experience, and education fields. Parsing happens locally in this extension page; review the extracted details and click Save to keep them in this browser.
-4. On a job page, click the extension and choose **Capture this job**. Sign in if asked, review the captured role/company/description, then save it to your account.
-5. In Gmail, open a job-related message and choose **Log this email** to add a reply signal to the tracker. This is an on-demand capture; inbox-wide sync is not enabled.
-6. On an application form, choose **Fill application**. It fills recognized details from your local profile. With auto-submit disabled, review the fields and submit yourself.
-7. To enable opt-in submission, open **Edit profile**, enable auto-submit, and list exact approved hostnames (for example, `jobs.example.com`). For each job, open the listing's application form and click **Fill application** in the extension. On an approved host, it submits only when it identifies one application form, fills known fields, sees no unanswered required fields or sensitive declarations, and finds a clear submit button.
+---
 
-The helper blocks auto-submit when required answers or required file uploads are missing, or it detects questions about work authorization, sponsorship, salary, demographics, legal declarations, assessments, or consent. It does not attach the PDF for you; upload it on each application form when required. It does not find or open job listings in the background, and it does not submit a batch of applications. Check the site for a receipt after it submits; the helper cannot guarantee that a third-party site accepted the application. Review the host allowlist and your saved details before enabling this feature.
+## How to Install and Use in Chrome
 
-## Privacy and limitations
+### 1. Load the Extension
+1. Open Google Chrome and go to `chrome://extensions/`.
+2. Turn ON **Developer mode** in the top-right corner.
+3. Click **Load unpacked** and select the `browser-helper/` directory inside this repository.
 
-The extension profile lives in Chrome extension storage on this device. Captured page text and message snippets are sent to the Apply Desk URL in a fragment for prefilling; URL fragments are not sent to the web server, but the text is visible in the opened tab until the app removes the fragment. Application records are stored in your signed-in Supabase account and protected by row-level security. Gmail sync is optional and uses Google's read-only OAuth consent; the app stores only message headers and short snippets in your own account. Every user must connect their own Gmail account.
+### 2. Configure Your Profile & Preferences
+1. Click the extension icon and click **⚙ Profile & Settings** (or right-click extension icon → **Options**).
+2. Either upload your resume PDF (parsed entirely on your local device) or type in your details:
+   - Full name, Email, Phone, Location, Portfolio, LinkedIn, GitHub.
+   - Summary, Skills, and Experience facts.
+   - Wellfound target job title keywords (e.g. `software engineer`, `full stack`, `react`).
+   - Title blocklist (e.g. `senior`, `principal`, `lead`, `intern`).
+   - Work authorization, visa sponsorship, relocation, salary expectations, and notice period.
+   - (Optional) Paste your free Google Gemini API key if you want AI to answer custom startup questions.
+3. Click **Save settings on this device**.
+4. *(Alternative)* If you have an account on [Apply Desk](https://damnsunnyy.github.io/ApplyDesk/), go to **Profile** → **Sync profile to Chrome helper** to sync all details in one click!
+
+### 3. Run on Wellfound
+1. Open [wellfound.com/jobs](https://wellfound.com/jobs) in Chrome and make sure you are signed in.
+2. Set any desired location, market, or search filters in Wellfound's UI.
+3. Click the **Apply Desk** extension icon in your Chrome toolbar:
+   - Click **🧪 Dry Run (Fill, No Submit)** to test the form filling without sending.
+   - Click **▶ Start Live Auto-Apply** to begin automatic submissions.
+4. Watch the on-screen HUD in the top-right corner of your Wellfound tab. You can click **⏹ Stop runner** at any point.
+5. Once complete, Apply Desk opens automatically to import all submitted applications directly into your private tracking desk!
+
+---
+
+## Standalone CLI Runner (Playwright Mode)
+
+If you prefer running automation from your terminal via Node.js and Playwright (like `ankitbaghel01/wellfound_autoApply`):
+
+1. Install Playwright:
+   ```bash
+   npm install -D playwright
+   npx playwright install chromium
+   ```
+2. Copy `.env.example` to `.env` and fill in your information:
+   ```bash
+   cp .env.example .env
+   ```
+3. One-time interactive login to save your session:
+   ```bash
+   node auto-apply-runner.js wellfound login
+   ```
+4. Test in Dry Run mode:
+   ```bash
+   node auto-apply-runner.js wellfound
+   ```
+5. Run in Live Mode:
+   ```bash
+   node auto-apply-runner.js wellfound --live
+   ```
+
+Applications are logged locally to `applications.csv`.

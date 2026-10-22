@@ -1,1 +1,37 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="popup.css"><title>Apply Desk</title></head><body><main><p class="brand">A <span>/ APPLY DESK</span></p><h1>Application helper</h1><p class="note">Runs on the tab you choose. Details stay on this device. Auto-submit works only on approved domains when every required field has a known answer.</p><button id="capture">Capture this job</button><button id="log-email" class="secondary">Log this email</button><button id="fill" class="secondary">Fill application</button><div class="bottom"><button id="settings">Edit profile</button><a href="https://damnsunnyy.github.io/ApplyDesk/" target="_blank">Open tracker ↗</a></div><p id="message" role="status"></p></main><script src="popup.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="popup.css">
+  <title>Apply Desk</title>
+</head>
+<body>
+  <main>
+    <p class="brand">A <span>/ APPLY DESK</span></p>
+    <h1>Application helper</h1>
+    <div id="daily-status" class="status-pill">Today: <strong id="daily-count">0</strong> / 50 applied</div>
+
+    <section class="section-block">
+      <p class="section-title">Wellfound Automation</p>
+      <button id="wellfound-auto" class="primary-btn">▶ Start Live Auto-Apply</button>
+      <button id="wellfound-dryrun" class="secondary">🧪 Dry Run (Fill, No Submit)</button>
+      <button id="wellfound-stop" class="danger-btn" style="display:none;">⏹ Stop Automation</button>
+    </section>
+
+    <section class="section-block">
+      <p class="section-title">Any Job Board & Email</p>
+      <button id="capture" class="secondary">Capture this job</button>
+      <button id="log-email" class="secondary">Log this email</button>
+      <button id="fill" class="secondary">Fill application form</button>
+    </section>
+
+    <div class="bottom">
+      <button id="settings">⚙ Profile & Settings</button>
+      <a href="https://damnsunnyy.github.io/ApplyDesk/" target="_blank">Open tracker ↗</a>
+    </div>
+    <p id="message" role="status"></p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

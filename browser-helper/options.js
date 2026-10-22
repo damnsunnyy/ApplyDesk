@@ -2,20 +2,72 @@ import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 pdfjs.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL('pdf.worker.min.mjs');
 
-const blank = {
-  name: '', email: '', phone: '', location: '', linkedin: '', website: '',
-  summary: '', skills: '', experience: '', education: '', autoSubmit: false, domains: [],
+const defaultProfile = {
+  name: '', email: '', phone: '', location: '', linkedin: '', website: '', github: '',
+  summary: '', skills: '', experience: '', education: ''
+};
+
+const defaultAutomation = {
+  wellfoundKeywords: [
+    'software developer', 'software engineer', 'web developer', 'frontend', 'backend', 'full stack', 'react', 'javascript', 'typescript', 'python', 'business analyst', 'project coordinator'
+  ],
+  wellfoundBlocklist: ['senior', 'principal', 'director', 'manager', 'lead', 'intern', 'staff', 'architect'],
+  wellfoundCompanyBlocklist: [],
+  workAuthorization: 'Yes',
+  visaSponsorship: 'No',
+  willingToRelocate: 'Yes',
+  yearsOfExperience: '3',
+  salaryExpectation: 'Negotiable',
+  noticePeriod: 'Immediately',
+  wellfoundCoverTemplate: '',
+  geminiApiKey: '',
+  wellfoundDailyCap: 50,
+  wellfoundDelayMin: 45,
+  wellfoundDelayMax: 75,
+  wellfoundAutoRun: false,
+  wellfoundScheduleTime: '09:00',
+  autoSubmit: false,
+  domains: []
 };
 
 chrome.storage.local.get(['profile', 'automation'], ({ profile, automation }) => {
-  const p = { ...blank, ...profile };
-  const a = { autoSubmit: false, domains: [], ...automation };
+  const p = { ...defaultProfile, ...profile };
+  const a = { ...defaultAutomation, ...automation };
+
+  // Profile fields
   for (const [key, value] of Object.entries(p)) {
     const el = document.querySelector(`[name="${key}"]`);
     if (el) el.value = value || '';
   }
-  document.querySelector('[name="autoSubmit"]').checked = Boolean(a.autoSubmit);
-  document.querySelector('[name="domains"]').value = (a.domains || []).join('\n');
+
+  // Automation fields
+  const setVal = (name, val) => {
+    const el = document.querySelector(`[name="${name}"]`);
+    if (el) el.value = val !== undefined && val !== null ? val : '';
+  };
+
+  setVal('wellfoundKeywords', (a.wellfoundKeywords || []).join('\n'));
+  setVal('wellfoundBlocklist', (a.wellfoundBlocklist || []).join('\n'));
+  setVal('wellfoundCompanyBlocklist', (a.wellfoundCompanyBlocklist || []).join('\n'));
+  setVal('workAuthorization', a.workAuthorization || 'Yes');
+  setVal('visaSponsorship', a.visaSponsorship || 'No');
+  setVal('willingToRelocate', a.willingToRelocate || 'Yes');
+  setVal('yearsOfExperience', a.yearsOfExperience || '3');
+  setVal('salaryExpectation', a.salaryExpectation || 'Negotiable');
+  setVal('noticePeriod', a.noticePeriod || 'Immediately');
+  setVal('wellfoundCoverTemplate', a.wellfoundCoverTemplate || '');
+  setVal('geminiApiKey', a.geminiApiKey || '');
+  setVal('wellfoundDailyCap', a.wellfoundDailyCap || 50);
+  setVal('wellfoundDelayMin', a.wellfoundDelayMin || 45);
+  setVal('wellfoundDelayMax', a.wellfoundDelayMax || 75);
+  setVal('wellfoundScheduleTime', a.wellfoundScheduleTime || '09:00');
+  setVal('domains', (a.domains || []).join('\n'));
+
+  const autoRunEl = document.querySelector('[name="wellfoundAutoRun"]');
+  if (autoRunEl) autoRunEl.checked = Boolean(a.wellfoundAutoRun);
+
+  const autoSubmitEl = document.querySelector('[name="autoSubmit"]');
+  if (autoSubmitEl) autoSubmitEl.checked = Boolean(a.autoSubmit);
 });
 
 const normalize = value => String(value || '').replace(/\s+/g, ' ').trim();
@@ -39,6 +91,8 @@ function extractResume(text) {
   const email = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || '';
   const linkedinRaw = text.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[A-Z0-9._%-]+/i)?.[0] || '';
   const linkedin = linkedinRaw ? `https://${linkedinRaw.replace(/^https?:\/\//i, '').replace(/^www\./i, '')}` : '';
+  const githubRaw = text.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[A-Z0-9._%-]+/i)?.[0] || '';
+  const github = githubRaw ? `https://${githubRaw.replace(/^https?:\/\//i, '').replace(/^www\./i, '')}` : '';
   const labelledWebsite = text.match(/(?:portfolio|personal website|website)\s*[:|–-]\s*((?:https?:\/\/)?(?:www\.)?[A-Z0-9.-]+\.[A-Z]{2,}(?:\/[^\s|]*)?)/i)?.[1] || '';
   const website = labelledWebsite ? (/^https?:\/\//i.test(labelledWebsite) ? labelledWebsite : `https://${labelledWebsite}`) : '';
   const phoneLine = lines.slice(0, 12).find(line => /phone|mobile|contact|\+?\d[\d\s().-]{7,}\d/i.test(line) && !line.includes('@')) || '';
@@ -50,7 +104,7 @@ function extractResume(text) {
   const skills = section(text, [/^TECHNICAL SKILLS$/i, /^SKILLS$/i, /^CORE COMPETENCIES$/i], 2200);
   const experience = section(text, [/^(?:PROFESSIONAL )?EXPERIENCE$/i, /^WORK EXPERIENCE$/i, /^EMPLOYMENT HISTORY$/i], 4000);
   const education = section(text, [/^EDUCATION$/i, /^EDUCATION & QUALIFICATIONS$/i], 2200);
-  return { name, email, phone, location, linkedin, website, summary, skills, experience, education };
+  return { name, email, phone, location, linkedin, website, github, summary, skills, experience, education };
 }
 
 document.querySelector('#resume-file').addEventListener('change', async event => {
@@ -94,22 +148,62 @@ document.querySelector('#resume-file').addEventListener('change', async event =>
     }
     status.textContent = added
       ? `Found resume details for ${added} fields. Review and edit them, then save your profile.`
-      : 'Resume text was read, but the profile fields already have values or no supported details were recognized. You can still edit them manually.';
+      : 'Resume text was read. Check the fields below and edit as needed.';
   } catch (error) {
-    status.textContent = error.message || 'Could not read this PDF. Check that it is not password protected.';
+    status.textContent = error.message || 'Could not read this PDF.';
   }
 });
 
 document.querySelector('#profile-form').addEventListener('submit', async event => {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
-  const profile = Object.fromEntries(formData);
-  const automation = {
-    autoSubmit: formData.has('autoSubmit'),
-    domains: String(formData.get('domains') || '').split(/[\n,]/).map(value => value.trim().toLowerCase()).filter(value => /^(?!-)[a-z0-9.-]+\.[a-z]{2,}$/.test(value)),
+
+  const profile = {
+    name: String(formData.get('name') || '').trim(),
+    email: String(formData.get('email') || '').trim(),
+    phone: String(formData.get('phone') || '').trim(),
+    location: String(formData.get('location') || '').trim(),
+    linkedin: String(formData.get('linkedin') || '').trim(),
+    website: String(formData.get('website') || '').trim(),
+    github: String(formData.get('github') || '').trim(),
+    summary: String(formData.get('summary') || '').trim(),
+    skills: String(formData.get('skills') || '').trim(),
+    experience: String(formData.get('experience') || '').trim(),
+    education: String(formData.get('education') || '').trim(),
   };
-  delete profile.autoSubmit;
-  delete profile.domains;
+
+  const automation = {
+    wellfoundKeywords: String(formData.get('wellfoundKeywords') || '')
+      .split(/[\n,;]/).map(v => v.trim()).filter(Boolean),
+    wellfoundBlocklist: String(formData.get('wellfoundBlocklist') || '')
+      .split(/[\n,;]/).map(v => v.trim()).filter(Boolean),
+    wellfoundCompanyBlocklist: String(formData.get('wellfoundCompanyBlocklist') || '')
+      .split(/[\n,;]/).map(v => v.trim()).filter(Boolean),
+    workAuthorization: String(formData.get('workAuthorization') || 'Yes'),
+    visaSponsorship: String(formData.get('visaSponsorship') || 'No'),
+    willingToRelocate: String(formData.get('willingToRelocate') || 'Yes'),
+    yearsOfExperience: String(formData.get('yearsOfExperience') || '3'),
+    salaryExpectation: String(formData.get('salaryExpectation') || 'Negotiable'),
+    noticePeriod: String(formData.get('noticePeriod') || 'Immediately'),
+    wellfoundCoverTemplate: String(formData.get('wellfoundCoverTemplate') || '').trim(),
+    geminiApiKey: String(formData.get('geminiApiKey') || '').trim(),
+    wellfoundDailyCap: Number(formData.get('wellfoundDailyCap')) || 50,
+    wellfoundDelayMin: Number(formData.get('wellfoundDelayMin')) || 45,
+    wellfoundDelayMax: Number(formData.get('wellfoundDelayMax')) || 75,
+    wellfoundAutoRun: formData.has('wellfoundAutoRun'),
+    wellfoundScheduleTime: String(formData.get('wellfoundScheduleTime') || '09:00'),
+    autoSubmit: formData.has('autoSubmit'),
+    domains: String(formData.get('domains') || '').split(/[\n,]/).map(v => v.trim().toLowerCase()).filter(Boolean),
+  };
+
   await chrome.storage.local.set({ profile, automation });
-  document.querySelector('#saved').textContent = 'Saved locally on this device.';
+  chrome.runtime.sendMessage({
+    type: 'wellfound-schedule',
+    enabled: automation.wellfoundAutoRun,
+    time: automation.wellfoundScheduleTime
+  });
+
+  const savedMsg = document.querySelector('#saved');
+  savedMsg.textContent = '✓ Profile & automation settings saved locally on this machine.';
+  setTimeout(() => { savedMsg.textContent = ''; }, 4000);
 });

@@ -1,1 +1,135 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="options.css"><title>Apply Desk profile</title></head><body><main><p class="brand">APPLY DESK · PRIVATE PROFILE</p><h1>Known application details</h1><p>Stored locally in this browser only. Add facts you are comfortable submitting. Unknown fields are left for you.</p><form id="profile-form"><label>Import resume PDF<input id="resume-file" type="file" accept="application/pdf,.pdf"></label><p class="help">The PDF is read on this device. Extracted details appear below for you to review; the file itself is not uploaded or saved.</p><output id="resume-status" aria-live="polite"></output><label>Full name<input name="name" autocomplete="name"></label><label>Email<input name="email" type="email" autocomplete="email"></label><label>Phone<input name="phone" type="tel" autocomplete="tel"></label><label>City / location<input name="location" autocomplete="address-level2"></label><label>LinkedIn URL<input name="linkedin" type="url"></label><label>Portfolio URL<input name="website" type="url"></label><label>Professional summary<textarea name="summary" rows="3"></textarea></label><label>Skills<textarea name="skills" rows="3"></textarea></label><label>Experience details<textarea name="experience" rows="5"></textarea></label><label>Education details<textarea name="education" rows="3"></textarea></label><h2>Optional auto-submit</h2><label><input name="autoSubmit" type="checkbox">Allow submission after every required field is filled</label><label>Approved domains, one per line<textarea name="domains" rows="4" placeholder="jobs.example.com"></textarea></label><p>Use exact host names. Submission is blocked for unanswered required fields, required file uploads, and questions about eligibility, sponsorship, salary, demographics, legal declarations, assessments, or consent. You start each application by clicking the extension.</p><button>Save profile on this device</button><output id="saved"></output></form><aside>Review imported facts. The helper cannot attach the resume PDF automatically; upload it on each application form if required.</aside></main><script type="module" src="options.bundle.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="options.css">
+  <title>Apply Desk — Profile & Automation</title>
+</head>
+<body>
+  <main>
+    <p class="brand">APPLY DESK · BROWSER HELPER</p>
+    <h1>Profile &amp; Automation</h1>
+    <p>Stored locally in this Chrome instance. Used to auto-fill job applications and run the Wellfound auto-apply engine.</p>
+
+    <form id="profile-form">
+      <h2>Resume facts &amp; contact</h2>
+      <label>Import resume PDF
+        <input id="resume-file" type="file" accept="application/pdf,.pdf">
+      </label>
+      <p class="help">The PDF is parsed locally on your device to extract contact details, skills, and experience.</p>
+      <output id="resume-status" aria-live="polite"></output>
+
+      <div class="grid-2">
+        <label>Full name<input name="name" autocomplete="name" required></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required></label>
+      </div>
+
+      <div class="grid-2">
+        <label>Phone<input name="phone" type="tel" autocomplete="tel"></label>
+        <label>City / Location<input name="location" placeholder="e.g. San Francisco, CA or Remote"></label>
+      </div>
+
+      <div class="grid-2">
+        <label>LinkedIn URL<input name="linkedin" type="url" placeholder="https://linkedin.com/in/..."></label>
+        <label>Portfolio / Website URL<input name="website" type="url" placeholder="https://..."></label>
+      </div>
+
+      <label>GitHub URL<input name="github" type="url" placeholder="https://github.com/..."></label>
+      <label>Professional summary<textarea name="summary" rows="3" placeholder="Brief summary of your background and expertise..."></textarea></label>
+      <label>Key skills &amp; technologies (comma-separated)<textarea name="skills" rows="3" placeholder="React, TypeScript, Node.js, Python, PostgreSQL, AWS..."></textarea></label>
+      <label>Experience highlights &amp; facts<textarea name="experience" rows="5" placeholder="Bullet points or summary of verified career achievements..."></textarea></label>
+      <label>Education details<textarea name="education" rows="2" placeholder="Degree, field of study, university..."></textarea></label>
+
+      <h2>Wellfound Auto-Apply Engine</h2>
+      <p>Configured specifically to match the capabilities of <a href="https://github.com/ankitbaghel01/wellfound_autoApply" target="_blank" style="color:#d7f36a;">ankitbaghel01/wellfound_autoApply</a>.</p>
+
+      <label>Target job title keywords (one per line)
+        <textarea name="wellfoundKeywords" rows="4" placeholder="Software Engineer&#10;Frontend Developer&#10;Full Stack Developer&#10;React Developer&#10;Backend Engineer"></textarea>
+      </label>
+
+      <label>Blocked job title keywords (one per line)
+        <textarea name="wellfoundBlocklist" rows="3" placeholder="senior&#10;principal&#10;director&#10;manager&#10;lead&#10;staff&#10;architect&#10;intern"></textarea>
+      </label>
+
+      <label>Blocked company names (one per line, optional)
+        <textarea name="wellfoundCompanyBlocklist" rows="2" placeholder="CompanyX&#10;CompanyY"></textarea>
+      </label>
+
+      <div class="grid-2">
+        <label>Legally authorized to work?
+          <select name="workAuthorization">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+          </select>
+        </label>
+        <label>Require visa sponsorship?
+          <select name="visaSponsorship">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>Willing to relocate?
+          <select name="willingToRelocate">
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+            <option value="Negotiable">Negotiable</option>
+          </select>
+        </label>
+        <label>Years of experience
+          <input name="yearsOfExperience" type="text" placeholder="e.g. 3 or 4" value="3">
+        </label>
+      </div>
+
+      <div class="grid-2">
+        <label>Expected salary / compensation
+          <input name="salaryExpectation" type="text" placeholder="e.g. $90,000 - $120,000 or Negotiable" value="Negotiable">
+        </label>
+        <label>Notice period / Start date
+          <input name="noticePeriod" type="text" placeholder="e.g. Immediately or 2 weeks" value="Immediately">
+        </label>
+      </div>
+
+      <label>Cover letter / Note template (Variables: {company}, {title}, {name}, {skills}, {summary}, {email}, {phone}, {portfolio}, {linkedin})
+        <textarea name="wellfoundCoverTemplate" rows="6" placeholder="Hi {company} team,&#10;&#10;I am excited to apply for the {title} position. With my background in {skills}, I have built reliable web applications and solved core engineering challenges. I would love to bring my skills to {company}.&#10;&#10;Best regards,&#10;{name}&#10;{email} | {phone}&#10;{portfolio}"></textarea>
+      </label>
+
+      <label>Google Gemini API Key (Optional AI Fallback)
+        <input name="geminiApiKey" type="password" placeholder="AIzaSy... (free key from Google AI Studio)">
+      </label>
+      <p class="help">If provided, any unexpected custom questions asked by startups on Wellfound are dynamically answered using your CV facts via Gemini Flash.</p>
+
+      <div class="grid-2">
+        <label>Daily application cap
+          <input name="wellfoundDailyCap" type="number" min="1" max="100" value="50">
+        </label>
+        <label>Delay between submissions (seconds)
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input name="wellfoundDelayMin" type="number" min="10" max="300" value="45" style="width:70px;">
+            <span>to</span>
+            <input name="wellfoundDelayMax" type="number" min="10" max="300" value="75" style="width:70px;">
+            <span>sec</span>
+          </div>
+        </label>
+      </div>
+
+      <label><input name="wellfoundAutoRun" type="checkbox">Run automatically once each day while Chrome is open</label>
+      <label>Daily scheduled start time<input name="wellfoundScheduleTime" type="time" value="09:00"></label>
+
+      <h2>Other job sites</h2>
+      <label><input name="autoSubmit" type="checkbox">Allow one-click auto-submit on manually approved career sites</label>
+      <label>Approved domains (one per line)
+        <textarea name="domains" rows="2" placeholder="jobs.lever.co&#10;boards.greenhouse.io"></textarea>
+      </label>
+
+      <button type="submit">Save settings on this device</button>
+      <output id="saved"></output>
+    </form>
+    <aside>All data remains private in Chrome local extension storage on this machine.</aside>
+  </main>
+  <script type="module" src="options.bundle.js"></script>
+</body>
+</html>

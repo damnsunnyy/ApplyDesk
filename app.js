@@ -28,6 +28,7 @@ let gmailPoll = null;
 let authMode = 'signin';
 let pendingCapture = null;
 let pendingEmail = null;
+let pendingWellfoundApplications = [];
 
 function showView(id) { for (const view of VIEWS) byId(view).hidden = view !== id; }
 function setMessage(id, message, error = false) { const el = byId(id); if (!el) return; el.textContent = message; el.classList.toggle('error', error); }
@@ -88,6 +89,7 @@ async function routeSession(nextSession) {
     await loadDesk();
     openPendingCapture();
     await savePendingEmail();
+    await savePendingWellfoundApplications();
   } catch (error) { showView('desk-view'); toast(`Could not load your profile: ${error.message}`); }
 }
 
@@ -173,9 +175,33 @@ function bindAuth() {
   byId('export-button').addEventListener('click', exportCsv);
   byId('gmail-connect').addEventListener('click', connectGmail);
   byId('gmail-scan').addEventListener('click', () => syncGmail(false));
+  byId('sync-browser-helper').addEventListener('click', syncBrowserHelperProfile);
   $$('.nav-item[data-screen]').forEach(button => button.addEventListener('click', () => showScreen(button.dataset.screen)));
   $$('[data-open-screen]').forEach(button => button.addEventListener('click', () => showScreen(button.dataset.openScreen)));
   byId('search-role').addEventListener('keydown', event => { if (event.key === 'Enter') findJobs(); });
+}
+
+function syncBrowserHelperProfile() {
+  const output = byId('helper-sync-message');
+  const requestId = crypto.randomUUID?.() || String(Date.now());
+  const profileData = {
+    name: profile.full_name, email: session.user.email, phone: profile.phone, location: profile.location,
+    linkedin: profile.linkedin_url, website: profile.portfolio_url, summary: profile.summary,
+    skills: (profile.skills || []).join(', '), experience: profile.resume_facts, education: profile.resume_facts,
+    targetRoles: profile.target_roles || [],
+  };
+  const onResult = event => {
+    if (event.source !== window || event.origin !== location.origin || event.data?.type !== 'APPLYDESK_PROFILE_SYNC_RESULT' || event.data.requestId !== requestId) return;
+    window.removeEventListener('message', onResult);
+    clearTimeout(timeout);
+    output.textContent = event.data.ok ? 'Profile synced to the Chrome helper on this device.' : 'Chrome helper could not save the profile. Check that its storage is available.';
+  };
+  const timeout = setTimeout(() => {
+    window.removeEventListener('message', onResult);
+    output.textContent = 'Helper not detected. Install or reload the Apply Desk Chrome extension, then try again.';
+  }, 1800);
+  window.addEventListener('message', onResult);
+  window.postMessage({ type: 'APPLYDESK_PROFILE_SYNC', requestId, profile: profileData }, location.origin);
 }
 
 function openPasswordDialog() { if (!byId('password-dialog').open) byId('password-dialog').showModal(); }
@@ -219,7 +245,7 @@ async function saveProfile(event, onboarding) {
   const { data, error } = await supabase.from('profiles').upsert(values, { onConflict: 'user_id' }).select().single();
   if (error) { setMessage(messageId, error.message, true); return; }
   profile = data; setMessage(messageId, 'Saved to your private account.'); fillProfileForm(byId('edit-profile-form'), profile, session.user.email);
-  if (onboarding) { await importLegacyDataForOwner(); showView('desk-view'); await loadDesk(); openPendingCapture(); await savePendingEmail(); } else { populateSearchDefaults(); toast('Profile updated.'); }
+  if (onboarding) { await importLegacyDataForOwner(); showView('desk-view'); await loadDesk(); openPendingCapture(); await savePendingEmail(); await savePendingWellfoundApplications(); } else { populateSearchDefaults(); toast('Profile updated.'); }
 }
 
 function fillProfileForm(form, data, email = '') {
@@ -516,12 +542,45 @@ function consumeEmail() {
   catch { toast('Could not read the captured email.'); }
 }
 
+function consumeWellfoundApplications() {
+  if (!location.hash.startsWith('#wellfound=')) return;
+  try {
+    pendingWellfoundApplications = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(11)))));
+    history.replaceState(null, '', location.pathname + location.search);
+  } catch { toast('Could not read the Wellfound application log.'); }
+}
+
+async function savePendingWellfoundApplications() {
+  if (!pendingWellfoundApplications.length || !session) return;
+  const rows = pendingWellfoundApplications;
+  pendingWellfoundApplications = [];
+  let saved = 0;
+  for (const item of rows) {
+    const url = safeUrl(item.url);
+    if (!url || !/wellfound\.com$/i.test(new URL(url).hostname.split('.').slice(-2).join('.'))) continue;
+    const providerJobId = `wellfound-${btoa(encodeURIComponent(url)).slice(0, 180)}`;
+    const { data: existing, error: lookupError } = await supabase.from('applications').select('id').eq('user_id', session.user.id).eq('provider_job_id', providerJobId).maybeSingle();
+    if (lookupError) { toast(`Could not check a Wellfound application: ${lookupError.message}`); continue; }
+    if (existing) continue;
+    const job = { title: String(item.title || 'Wellfound role').slice(0, 180), company: String(item.company || 'Company to confirm').slice(0, 140), description: String(item.description || '').slice(0, 12000) };
+    const match = matchJob(job);
+    const { error } = await supabase.from('applications').insert({
+      user_id: session.user.id, provider_job_id: providerJobId, title: job.title, company: job.company,
+      url, description: job.description, status: 'applied', applied_at: String(item.date || new Date().toISOString()).slice(0, 10),
+      match_score: match.score, matched_terms: match.matched, missing_terms: match.missing,
+    });
+    if (error) toast(`Could not save ${job.title}: ${error.message}`); else saved++;
+  }
+  if (saved) { await loadApplications(); toast(`Synced ${saved} Wellfound applications to your desk.`); }
+}
+
 function openPendingCapture() {
   if (!pendingCapture) return;
-  const form = byId('application-form'); form.elements.title.value = pendingCapture.title || ''; form.elements.url.value = safeUrl(pendingCapture.url); form.elements.description.value = pendingCapture.text || '';
+  const form = byId('application-form'); form.elements.title.value = pendingCapture.title || ''; form.elements.company.value = pendingCapture.company || ''; form.elements.location.value = pendingCapture.location || ''; form.elements.url.value = safeUrl(pendingCapture.url); form.elements.description.value = pendingCapture.text || '';
   byId('application-dialog').showModal(); pendingCapture = null;
 }
 
 consumeCapture();
 consumeEmail();
+consumeWellfoundApplications();
 boot();
